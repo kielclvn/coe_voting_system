@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mister and Miss COE 2026 Voting</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: url("images/bg.jfif") no-repeat center center fixed;
+      background-size: cover;
+      color: #f5f5f5;
+    }
+    h1 {
+      text-align: center;
+      font-family: Georgia, serif;
+      font-size: 2em;
+      color: #FFD700;
+      margin-bottom: 10px;
+      text-shadow: 2px 2px 4px #000;
+    }
+    @media (min-width: 768px) { h1 { font-size: 2.5em; } }
+    @media (min-width: 1024px) { h1 { font-size: 3em; } }
+    h2 {
+      margin-top: 40px;
+      font-size: 1.5em;
+      color: #FFD700;
+      border-bottom: 2px solid #FFD700;
+      display: inline-block;
+      padding-bottom: 5px;
+      text-shadow: 1px 1px 3px #000;
+    }
+    @media (min-width: 768px) { h2 { font-size: 1.8em; } }
+    .instructions {
+      background: rgba(0,0,0,0.6);
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      width: 100%;
+      max-width: 900px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    form {
+      text-align: center;
+      padding: 20px;
+      border-radius: 12px;
+      display: block;
+      background: rgba(0,0,0,0.4);
+      width: 100%;
+      max-width: 900px;
+      margin: auto;
+    }
+    label { font-size: 1.1em; }
+    input[type="text"] {
+      padding: 8px;
+      border-radius: 5px;
+      border: 1px solid #FFD700;
+      margin-top: 10px;
+      width: 80%;
+      max-width: 400px;
+    }
+    .candidate-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+      justify-items: center;
+      margin-top: 20px;
+    }
+    .candidate-card {
+      background: #fff;
+      border: 2px solid #FFD700;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 220px;
+      padding: 15px;
+      text-align: center;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      color: #333;
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .candidate-card:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 15px rgba(255,215,0,0.6);
+    }
+    .candidate-card img {
+      width: 100%;
+      height: auto;
+      border-radius: 10px;
+      margin-bottom: 10px;
+    }
+    .candidate-card h3 {
+      margin: 5px 0;
+      font-size: 1.1em;
+      color: #3F704D;
+    }
+    @media (min-width: 768px) { .candidate-card h3 { font-size: 1.2em; } }
+    .candidate-card p {
+      font-style: italic;
+      font-size: 0.9em;
+      margin-bottom: 10px;
+      color: #555;
+    }
+    button {
+      margin-top: 30px;
+      padding: 12px 25px;
+      font-size: 1.1em;
+      background: #FFD700;
+      color: #3F704D;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    button:hover { background: #e6b800; }
+    #result {
+      margin-top: 20px;
+      font-size: 1.1em;
+      color: #FFD700;
+    }
+    #scoreboard {
+      margin-top: 40px;
+      background: rgba(0,0,0,0.6);
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 900px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    #scoreboard h2, #scoreboard h3 { color: #FFD700; }
+    #scoreboard p { color: #f5f5f5; }
+  </style>
+</head>
+<body>
+  <h1>Mister and Miss College of Education 2026 Voting</h1>
+
+      <!-- Instructions -->
+  <div class="instructions">
+    <h2>Voting Instructions</h2>
+    <p>1. Enter your valid <strong>Ticket ID</strong> in the field provided. 
+       Your Ticket ID is revealed when you <strong>scan your concert ticket using your phone camera</strong>. 
+       It follows the format <strong>COE2026-ABC123</strong>.</p>
+    <p>2. Select <strong>one Mr. candidate</strong> and <strong>one Ms. candidate</strong> by clicking the “Vote” button under their card.</p>
+    <p>3. After making your selections, click <strong>Submit Vote</strong> at the bottom of the page.</p>
+    <p style="color:#FFD700; font-weight:bold;">
+      Note: Your vote will only be counted if you select exactly one candidate from each category.
+    </p>
+    <p><strong>Voting Rules:</strong><br>
+      • Each Ticket ID can vote only <strong>once per day per category</strong>.<br>
+      • Voting period is from <strong>March 23, 12:00 PM</strong> (Philippine Time) until <strong>March 30, 12:00 PM</strong> (Philippine Time).<br>
+      • Votes submitted outside this schedule will not be counted.
+    </p>  
+    <p><strong>Special Award – Darling of the Crowd:</strong><br>
+      • Computation is based on <strong>50% System Votes</strong> + <strong>50% Facebook Reactions</strong>.<br>
+      • Facebook reactions are updated by the admin panel and combined with system votes to determine the final Darling of the Crowd score.
+    </p>
+  </div>
+
+  <form id="voteForm">
+    <label>Enter Ticket ID:</label><br>
+    <input type="text" id="ticket_id" required><br><br>
+
+    <!-- Mr. Candidates -->
+    <h2>Mr. Candidates</h2>
+    <div class="candidate-grid">
+      <div class="candidate-card"><img src="images/mr1.jpg" alt="Benj Anthony Gabo"><h3>Benj Anthony Gabo</h3><p>Ugnayang Kayumanggi • BSE Filipino</p><input type="radio" name="male_candidate" value="cand001" required> Vote</div>
+      <div class="candidate-card"><img src="images/mr2.jpg" alt="Lance Christopher Calixto"><h3>Lance Christopher Calixto</h3><p>HM Society • BSHM</p><input type="radio" name="male_candidate" value="cand002"> Vote</div>
+      <div class="candidate-card"><img src="images/mr3.jpg" alt="Yuan Sales"><h3>Yuan Sales</h3><p>Daskalos Coalition • BEED</p><input type="radio" name="male_candidate" value="cand003"> Vote</div>
+      <div class="candidate-card"><img src="images/mr4.jpg" alt="Neo Salangsang"><h3>Neo Salangsang</h3><p>Daskalos Coalition • BEED</p><input type="radio" name="male_candidate" value="cand004"> Vote</div>
+      <div class="candidate-card"><img src="images/mr5.jpg" alt="Victor Angello Dauag"><h3>Victor Angello Dauag</h3><p>The Elite Guild • BSE English</p><input type="radio" name="male_candidate" value="cand005"> Vote</div>
+      <div class="candidate-card"><img src="images/mr6.jpg" alt="John Edward Sabado"><h3>John Edward Sabado</h3><p>Ugnayang Kayumanggi • BSE Filipino</p><input type="radio" name="male_candidate" value="cand006"> Vote</div>
+      <div class="candidate-card"><img src="images/mr7.jpg" alt="Diego Salvador Sandico"><h3>Diego Salvador Sandico</h3><p>HM Society • BSHM</p><input type="radio" name="male_candidate" value="cand007"> Vote</div>
+      <div class="candidate-card"><img src="images/mr8.jpg" alt="Alex Ventilacion"><h3>Alex Ventilacion</h3><p>The Elite Guild • BSE English</p><input type="radio" name="male_candidate" value="cand008"> Vote</div>
+    </div>
+
+        <!-- Ms. Candidates -->
+    <h2>Ms. Candidates</h2>
+    <div class="candidate-grid">
+      <div class="candidate-card"><img src="images/ms1.jpg" alt="Denise Banaag"><h3>Denise Banaag</h3><p>Ugnayang Kayumanggi • BSE Filipino</p><input type="radio" name="female_candidate" value="cand009" required> Vote</div>
+      <div class="candidate-card"><img src="images/ms2.jpg" alt="Kiara Andrie Simon"><h3>Kiara Andrie Simon</h3><p>HM Society • BSHM</p><input type="radio" name="female_candidate" value="cand010"> Vote</div>
+      <div class="candidate-card"><img src="images/ms3.jpg" alt="Ryzamae Ballesteros"><h3>Ryzamae Ballesteros</h3><p>Daskalos Coalition • BEED</p><input type="radio" name="female_candidate" value="cand011"> Vote</div>
+      <div class="candidate-card"><img src="images/ms4.jpg" alt="Jonalyn Tepace"><h3>Jonalyn Tepace</h3><p>Daskalos Coalition • BEED</p><input type="radio" name="female_candidate" value="cand012"> Vote</div>
+      <div class="candidate-card"><img src="images/ms5.jpg" alt="Nadine Marinay"><h3>Nadine Marinay</h3><p>The Elite Guild • BSE English</p><input type="radio" name="female_candidate" value="cand013"> Vote</div>
+      <div class="candidate-card"><img src="images/ms6.jpg" alt="Ashley Kate Lobarbio"><h3>Ashley Kate Lobarbio</h3><p>Ugnayang Kayumanggi • BSE Filipino</p><input type="radio" name="female_candidate" value="cand014"> Vote</div>
+      <div class="candidate-card"><img src="images/ms7.jpg" alt="Jonna Marie Azarcon"><h3>Jonna Marie Azarcon</h3><p>HM Society • BSHM</p><input type="radio" name="female_candidate" value="cand015"> Vote</div>
+      <div class="candidate-card"><img src="images/ms8.jpg" alt="Jhasmine Joy Lucambo"><h3>Jhasmine Joy Lucambo</h3><p>The Elite Guild • BSE English</p><input type="radio" name="female_candidate" value="cand016"> Vote</div>
+    </div>
+
+    <br><br>
+    <button type="submit">Submit Vote</button>
+  </form>
+
+  <p id="result"></p>
+
+  <div id="scoreboard" style="display:none;"></div>
+
+  <script>
+    async function loadScoreboard() {
+      try {
+        let res = await fetch("/public_scoreboard");
+        let data = await res.json();
+
+        if (data.message) {
+          document.getElementById("scoreboard").innerHTML = "<p>" + data.message + "</p>";
+        } else {
+          document.getElementById("scoreboard").innerHTML = `
+            <h2>Public Scoreboard</h2>
+            <h3>Mr. Category</h3>
+            ${data.male.map(item => `<p>Letter ${item.letter}: ${item.percent}%</p>`).join("")}
+            <h3>Ms. Category</h3>
+            ${data.female.map(item => `<p>Letter ${item.letter}: ${item.percent}%</p>`).join("")}
+          `;
+        }
+        document.getElementById("scoreboard").style.display = "block";
+      } catch (err) {
+        console.error("Error loading scoreboard:", err);
+      }
+    }
+
+    document.getElementById("voteForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const ticket_id = document.getElementById("ticket_id").value;
+      const male_selected = document.querySelector('input[name="male_candidate"]:checked');
+      const female_selected = document.querySelector('input[name="female_candidate"]:checked');
+
+      if (!male_selected || !female_selected) {
+        document.getElementById("result").innerText =
+          "Please select one Mr candidate and one Ms candidate before submitting your vote.";
+        return;
+      }
+
+      const male_candidate = male_selected.value;
+      const female_candidate = female_selected.value;
+
+      try {
+        let res1 = await fetch("/vote", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ticket_id, candidate_id: male_candidate, gender: "male" })
+        });
+        let data1 = await res1.json();
+
+        let res2 = await fetch("/vote", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ticket_id, candidate_id: female_candidate, gender: "female" })
+        });
+        let data2 = await res2.json();
+
+        if (res1.status === 400 || res2.status === 400) {
+          document.getElementById("result").innerText =
+            data1.message || data2.message;
+        } else {
+          document.getElementById("result").innerText =
+            "Your votes have been recorded successfully.";
+          // Show scoreboard after voting
+          loadScoreboard();
+          // Auto-refresh scoreboard every 10 seconds
+          setInterval(loadScoreboard, 10000);
+        }
+      } catch (err) {
+        document.getElementById("result").innerText = "Error: " + err.message;
+      }
+    });
+  </script>
+</body>
+</html>

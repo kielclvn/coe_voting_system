@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>COE Voting Admin Dashboard</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: url("images/bg.jfif") no-repeat center center fixed;
+      background-size: cover;
+      color: #f5f5f5;
+    }
+    h1 {
+      text-align: center;
+      font-family: Georgia, serif;
+      font-size: 2em;
+      color: #FFD700;
+      margin-bottom: 20px;
+      text-shadow: 2px 2px 4px #000;
+    }
+    h2 {
+      margin-top: 40px;
+      font-size: 1.5em;
+      color: #FFD700;
+      border-bottom: 2px solid #FFD700;
+      display: inline-block;
+      padding-bottom: 5px;
+      text-shadow: 1px 1px 3px #000;
+    }
+    .candidate-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+      justify-items: center;
+      margin-top: 20px;
+    }
+    .candidate-card {
+      background: #fff;
+      border: 2px solid #FFD700;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 220px;
+      padding: 15px;
+      text-align: center;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      color: #333;
+    }
+    .candidate-card img {
+      width: 100%;
+      height: auto;
+      border-radius: 10px;
+      margin-bottom: 10px;
+    }
+    .votes { font-weight: bold; color: #3F704D; margin-top: 5px; }
+    .fb { font-size: 0.95em; color: #1a73e8; margin-top: 3px; }
+    .darling { font-weight: bold; color: #d32f2f; margin-top: 5px; }
+    form {
+      margin-top: 40px;
+      background: rgba(255,255,255,0.9);
+      padding: 20px;
+      border-radius: 10px;
+      color: #333;
+    }
+    form h2 { color: #3F704D; border: none; text-shadow: none; }
+    form label { display: block; margin-top: 10px; }
+    form input, form select { padding: 5px; width: 100%; max-width: 300px; }
+    form button {
+      margin-top: 15px;
+      padding: 10px 20px;
+      background: #FFD700;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    form button:hover { background: #e6c200; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <h1>Admin Dashboard – Live Results</h1>
+
+  <!-- Login Section -->
+  <div id="login-section">
+    <h2>Admin Login</h2>
+    <label for="password">Password:</label>
+    <input type="password" id="password">
+    <button onclick="login()">Login</button>
+    <p id="login-message"></p>
+  </div>
+
+  <!-- Dashboard Section (hidden until login) -->
+  <div id="dashboard-section" class="hidden">
+    <!-- Mr. Candidates -->
+    <h2>Mr. Candidates</h2>
+    <div class="candidate-grid" id="mrCandidates"></div>
+
+    <!-- Ms. Candidates -->
+    <h2>Ms. Candidates</h2>
+    <div class="candidate-grid" id="msCandidates"></div>
+
+    <!-- Admin Form to Update FB Reactions -->
+    <form id="fbForm">
+      <h2>Update FB Reactions</h2>
+      <label for="candidate_select">Select Candidate:</label>
+      <select id="candidate_select" name="candidate_id" required></select>
+
+      <label for="reactions">FB Reactions:</label>
+      <input type="number" id="reactions" name="reactions" required>
+
+      <button type="submit">Update</button>
+    </form>
+    <p id="update-message"></p>
+
+    <button onclick="logout()">Logout</button>
+  </div>
+
+  <script>
+    let candidates = [];
+
+    async function login() {
+      const password = document.getElementById("password").value;
+      const res = await fetch("/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password })
+      });
+      const data = await res.json();
+      document.getElementById("login-message").innerText = data.message;
+      if (res.status === 200) {
+        document.getElementById("login-section").classList.add("hidden");
+        document.getElementById("dashboard-section").classList.remove("hidden");
+        loadResults();
+        setInterval(loadResults, 5000);
+      }
+    }
+
+    async function logout() {
+      const res = await fetch("/logout", { method: "POST" });
+      const data = await res.json();
+      alert(data.message);
+      document.getElementById("dashboard-section").classList.add("hidden");
+      document.getElementById("login-section").classList.remove("hidden");
+    }
+
+    async function loadResults() {
+      try {
+        let res = await fetch("/results");
+        candidates = await res.json();
+
+        document.getElementById("mrCandidates").innerHTML = "";
+        document.getElementById("msCandidates").innerHTML = "";
+        document.getElementById("candidate_select").innerHTML = "";
+
+        candidates.forEach(cand => {
+          let card = document.createElement("div");
+          card.className = "candidate-card";
+          card.innerHTML = `
+            <img src="images/${cand.image}" alt="${cand.name}">
+            <h3>${cand.name}</h3>
+            <p>${cand.org} • ${cand.program}</p>
+            <div class="votes">System Votes: ${cand.system_votes}</div>
+            <div class="fb">FB Reactions: ${cand.fb_reactions}</div>
+            <div class="darling">Darling Score: ${cand.darling_score}</div>
+          `;
+          if (cand.gender === "male") {
+            document.getElementById("mrCandidates").appendChild(card);
+          } else {
+            document.getElementById("msCandidates").appendChild(card);
+          }
+
+          // Add to dropdown
+          let option = document.createElement("option");
+          option.value = cand.id;
+          option.text = `${cand.name} (${cand.org})`;
+          document.getElementById("candidate_select").appendChild(option);
+        });
+      } catch (err) {
+        console.error("Error loading results:", err);
+      }
+    }
+
+    // Handle FB form submission
+    document.getElementById("fbForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      let candidate_id = document.getElementById("candidate_select").value;
+      let reactions = document.getElementById("reactions").value;
+
+      try {
+        const res = await fetch("/update_fb", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ candidate_id, reactions })
+        });
+        const data = await res.json();
+        document.getElementById("update-message").innerText = data.message;
+        loadResults(); // refresh results after update
+      } catch (err) {
+        console.error("Error updating FB reactions:", err);
+      }
+    });
+  </script>
+</body>
+</html>
