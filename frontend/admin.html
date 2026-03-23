@@ -77,6 +77,30 @@
     }
     form button:hover { background: #e6c200; }
     .hidden { display: none; }
+    table {
+      width: 100%;
+      background: #fff;
+      color: #333;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    table th, table td {
+      border: 1px solid #FFD700;
+      padding: 8px;
+      text-align: center;
+    }
+    table th {
+      background: #FFD700;
+      color: #333;
+    }
+    #searchInput {
+      margin-top: 10px;
+      padding: 8px;
+      width: 100%;
+      max-width: 300px;
+      border-radius: 5px;
+      border: 1px solid #FFD700;
+    }
   </style>
 </head>
 <body>
@@ -101,6 +125,23 @@
     <h2>Ms. Candidates</h2>
     <div class="candidate-grid" id="msCandidates"></div>
 
+    <!-- Raw Votes Table -->
+    <h2>Raw Votes</h2>
+    <input type="text" id="searchInput" placeholder="Search by Ticket ID or Student Name">
+    <table id="votesTable">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Ticket ID</th>
+          <th>Student Name</th>
+          <th>Candidate ID</th>
+          <th>Gender</th>
+          <th>Timestamp</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
     <!-- Admin Form to Update FB Reactions -->
     <form id="fbForm">
       <h2>Update FB Reactions</h2>
@@ -119,6 +160,7 @@
 
   <script>
     let candidates = [];
+    let votes = [];
 
     async function login() {
       const password = document.getElementById("password").value;
@@ -148,12 +190,17 @@
     async function loadResults() {
       try {
         let res = await fetch("/results");
-        candidates = await res.json();
+        let data = await res.json();
+
+        candidates = data.candidates;
+        votes = data.votes;
 
         document.getElementById("mrCandidates").innerHTML = "";
         document.getElementById("msCandidates").innerHTML = "";
         document.getElementById("candidate_select").innerHTML = "";
+        document.querySelector("#votesTable tbody").innerHTML = "";
 
+        // Candidate cards
         candidates.forEach(cand => {
           let card = document.createElement("div");
           card.className = "candidate-card";
@@ -177,10 +224,40 @@
           option.text = `${cand.name} (${cand.org})`;
           document.getElementById("candidate_select").appendChild(option);
         });
+
+        // Raw votes table
+        votes.forEach(v => {
+          let row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${v.id}</td>
+            <td>${v.ticket_id}</td>
+            <td>${v.student_name}</td>
+            <td>${v.candidate_id}</td>
+            <td>${v.gender}</td>
+            <td>${v.timestamp}</td>
+          `;
+          document.querySelector("#votesTable tbody").appendChild(row);
+        });
+
       } catch (err) {
         console.error("Error loading results:", err);
       }
     }
+
+        // Search filter for votes table
+    document.getElementById("searchInput").addEventListener("keyup", function() {
+      const filter = this.value.toLowerCase();
+      const rows = document.querySelectorAll("#votesTable tbody tr");
+      rows.forEach(row => {
+        const ticketId = row.cells[1].innerText.toLowerCase();
+        const studentName = row.cells[2].innerText.toLowerCase();
+        if (ticketId.includes(filter) || studentName.includes(filter)) {
+          row.style.display = "";
+        } else {
+          row.style.display = "none";
+        }
+      });
+    });
 
     // Handle FB form submission
     document.getElementById("fbForm").addEventListener("submit", async (e) => {

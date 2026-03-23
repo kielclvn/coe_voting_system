@@ -161,6 +161,10 @@
     <label>Enter Ticket ID:</label><br>
     <input type="text" id="ticket_id" required><br><br>
 
+    <!-- NEW FIELD -->
+    <label>Enter Student Name:</label><br>
+    <input type="text" id="student_name" required><br><br>
+
     <!-- Mr. Candidates -->
     <h2>Mr. Candidates</h2>
     <div class="candidate-grid">
@@ -219,51 +223,48 @@
     }
 
     document.getElementById("voteForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
+    e.preventDefault();
 
-      const ticket_id = document.getElementById("ticket_id").value;
-      const male_selected = document.querySelector('input[name="male_candidate"]:checked');
-      const female_selected = document.querySelector('input[name="female_candidate"]:checked');
+    const ticket_id = document.getElementById("ticket_id").value;
+    const student_name = document.getElementById("student_name").value;
+    const male_selected = document.querySelector('input[name="male_candidate"]:checked');
+    const female_selected = document.querySelector('input[name="female_candidate"]:checked');
 
-      if (!male_selected || !female_selected) {
+    if (!male_selected || !female_selected) {
+      document.getElementById("result").innerText =
+        "Please select one Mr candidate and one Ms candidate before submitting your vote.";
+      return;
+    }
+
+    const payload = {
+      ticket_id,
+      student_name,
+      votes: [
+        { candidate_id: male_selected.value, gender: "male" },
+        { candidate_id: female_selected.value, gender: "female" }
+      ]
+    };
+
+    try {
+      let res = await fetch("/vote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      let data = await res.json();
+
+      if (res.status === 400) {
+        document.getElementById("result").innerText = data.message;
+      } else {
         document.getElementById("result").innerText =
-          "Please select one Mr candidate and one Ms candidate before submitting your vote.";
-        return;
+          "Your votes have been recorded successfully.";
+        loadScoreboard();
+        setInterval(loadScoreboard, 10000);
       }
-
-      const male_candidate = male_selected.value;
-      const female_candidate = female_selected.value;
-
-      try {
-        let res1 = await fetch("/vote", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ticket_id, candidate_id: male_candidate, gender: "male" })
-        });
-        let data1 = await res1.json();
-
-        let res2 = await fetch("/vote", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ticket_id, candidate_id: female_candidate, gender: "female" })
-        });
-        let data2 = await res2.json();
-
-        if (res1.status === 400 || res2.status === 400) {
-          document.getElementById("result").innerText =
-            data1.message || data2.message;
-        } else {
-          document.getElementById("result").innerText =
-            "Your votes have been recorded successfully.";
-          // Show scoreboard after voting
-          loadScoreboard();
-          // Auto-refresh scoreboard every 10 seconds
-          setInterval(loadScoreboard, 10000);
-        }
-      } catch (err) {
-        document.getElementById("result").innerText = "Error: " + err.message;
-      }
-    });
+    } catch (err) {
+      document.getElementById("result").innerText = "Error: " + err.message;
+    }
+  });
   </script>
 </body>
 </html>
