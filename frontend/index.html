@@ -135,34 +135,19 @@
 <body>
   <h1>Mister and Miss College of Education 2026 Voting</h1>
 
-      <!-- Instructions -->
   <div class="instructions">
     <h2>Voting Instructions</h2>
-    <p>1. Enter your valid <strong>Ticket ID</strong> in the field provided. 
-       Your Ticket ID is revealed when you <strong>scan your concert ticket using your phone camera</strong>. 
-       It follows the format <strong>COE2026-ABC123</strong>.</p>
-    <p>2. Select <strong>one Mr. candidate</strong> and <strong>one Ms. candidate</strong> by clicking the “Vote” button under their card.</p>
-    <p>3. After making your selections, click <strong>Submit Vote</strong> at the bottom of the page.</p>
-    <p style="color:#FFD700; font-weight:bold;">
-      Note: Your vote will only be counted if you select exactly one candidate from each category.
-    </p>
-    <p><strong>Voting Rules:</strong><br>
-      • Each Ticket ID can vote only <strong>once per day per category</strong>.<br>
-      • Voting period is from <strong>March 23, 12:00 PM</strong> (Philippine Time) until <strong>March 30, 12:00 PM</strong> (Philippine Time).<br>
-      • Votes submitted outside this schedule will not be counted.
-    </p>  
-    <p><strong>Special Award – Darling of the Crowd:</strong><br>
-      • Computation is based on <strong>50% System Votes</strong> + <strong>50% Facebook Reactions</strong>.<br>
-      • Facebook reactions are updated by the admin panel and combined with system votes to determine the final Darling of the Crowd score.
-    </p>
+    <p>1. Enter your valid <strong>Ticket ID</strong>.</p>
+    <p>2. Enter your <strong>Full Name</strong> (e.g., DELA CRUZ, JUAN M.).</p>
+    <p>3. Select one Mr. candidate and one Ms. candidate.</p>
+    <p>4. Click Submit Vote at the bottom.</p>
   </div>
 
   <form id="voteForm">
     <label>Enter Ticket ID:</label><br>
     <input type="text" id="ticket_id" required><br><br>
 
-    <!-- NEW FIELD -->
-    <label>Enter Student Name:</label><br>
+    <label>Enter Student Name (Full Name):</label><br>
     <input type="text" id="student_name" required><br><br>
 
     <!-- Mr. Candidates -->
@@ -196,7 +181,6 @@
   </form>
 
   <p id="result"></p>
-
   <div id="scoreboard" style="display:none;"></div>
 
   <script>
@@ -204,7 +188,6 @@
       try {
         let res = await fetch("/public_scoreboard");
         let data = await res.json();
-
         if (data.message) {
           document.getElementById("scoreboard").innerHTML = "<p>" + data.message + "</p>";
         } else {
@@ -223,48 +206,55 @@
     }
 
     document.getElementById("voteForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
+      e.preventDefault();
 
-    const ticket_id = document.getElementById("ticket_id").value;
-    const student_name = document.getElementById("student_name").value;
-    const male_selected = document.querySelector('input[name="male_candidate"]:checked');
-    const female_selected = document.querySelector('input[name="female_candidate"]:checked');
+      const ticket_id = document.getElementById("ticket_id").value.trim();
+      const student_name = document.getElementById("student_name").value.trim();
+      const male_selected = document.querySelector('input[name="male_candidate"]:checked');
+      const female_selected = document.querySelector('input[name="female_candidate"]:checked');
 
-    if (!male_selected || !female_selected) {
-      document.getElementById("result").innerText =
-        "Please select one Mr candidate and one Ms candidate before submitting your vote.";
-      return;
-    }
-
-    const payload = {
-      ticket_id,
-      student_name,
-      votes: [
-        { candidate_id: male_selected.value, gender: "male" },
-        { candidate_id: female_selected.value, gender: "female" }
-      ]
-    };
-
-    try {
-      let res = await fetch("/vote", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-      let data = await res.json();
-
-      if (res.status === 400) {
-        document.getElementById("result").innerText = data.message;
-      } else {
+      // Validation: reject student IDs in name field
+      if (/^A\d{4}-\d{4}$/.test(student_name)) {
         document.getElementById("result").innerText =
-          "Your votes have been recorded successfully.";
-        loadScoreboard();
-        setInterval(loadScoreboard, 10000);
+          "Please enter your full name, not your student ID.";
+        return;
       }
-    } catch (err) {
-      document.getElementById("result").innerText = "Error: " + err.message;
-    }
-  });
+
+      if (!male_selected || !female_selected) {
+        document.getElementById("result").innerText =
+          "Please select one Mr candidate and one Ms candidate before submitting your vote.";
+        return;
+      }
+
+      const payload = {
+        ticket_id,
+        student_name,
+        votes: [
+          { candidate_id: male_selected.value, gender: "male" },
+          { candidate_id: female_selected.value, gender: "female" }
+        ]
+      };
+
+      try {
+        let res = await fetch("/vote", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        let data = await res.json();
+
+        if (res.status === 400) {
+          document.getElementById("result").innerText = data.message;
+        } else {
+          document.getElementById("result").innerText =
+            "Your votes have been recorded successfully.";
+          loadScoreboard();
+          setInterval(loadScoreboard, 10000);
+        }
+      } catch (err) {
+        document.getElementById("result").innerText = "Error: " + err.message;
+      }
+    });
   </script>
 </body>
 </html>

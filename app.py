@@ -3,7 +3,6 @@ import psycopg2
 import os
 from datetime import datetime, timedelta
 import pytz
-import time
 
 app = Flask(__name__)
 app.secret_key = "supersecretkey"  # palitan mo ito ng mas secure na string
@@ -123,6 +122,10 @@ def vote():
     student_name = data.get("student_name")
     votes = data.get("votes", [])
 
+    # safeguard: reject student IDs in name field
+    if student_name and student_name.startswith("A") and "-" in student_name:
+        return jsonify({"message": "Please enter your full name, not your student ID."}), 400
+
     now = datetime.now(PH_TZ)
     start = PH_TZ.localize(datetime(2026, 3, 23, 11, 0, 0))
     end = PH_TZ.localize(datetime(2026, 3, 30, 12, 0, 0))
@@ -133,6 +136,8 @@ def vote():
     conn = get_db_connection()
     cursor = conn.cursor()
 
+    # collect errors per gender
+    errors = []
     for v in votes:
         candidate_id = v.get("candidate_id")
         gender = v.get("gender")
@@ -147,15 +152,21 @@ def vote():
         already_voted = cursor.fetchone()[0]
 
         if already_voted > 0:
-            cursor.close()
-            conn.close()
-            return jsonify({"message": f"You have already voted today for {gender} category."}), 400
+            errors.append(gender)
 
+    if errors:
+        cursor.close()
+        conn.close()
+        return jsonify({"message": f"You have already voted today for {', '.join(errors)} category."}), 400
+
+    # if no errors, insert votes
+    for v in votes:
+        candidate_id = v.get("candidate_id")
+        gender = v.get("gender")
         cursor.execute("""
             INSERT INTO votes (ticket_id, student_name, candidate_id, gender, timestamp)
             VALUES (%s, %s, %s, %s, %s)
         """, (ticket_id, student_name, candidate_id, gender, now))
-
         cursor.execute("UPDATE candidates SET votes = votes + 1 WHERE id=%s", (candidate_id,))
 
     conn.commit()
@@ -167,14 +178,11 @@ def vote():
 
     return jsonify({"message": "Votes recorded successfully."}), 200
 
-
 # --- Results endpoint (admin full view) ---
 @app.route("/results", methods=["GET"])
 def results():
-    # Candidate summary
     candidates_data = get_results()
 
-    # Raw votes with student names
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
@@ -223,7 +231,6 @@ def update_fb():
     cursor.close()
     conn.close()
 
-    # Invalidate scoreboard cache after FB update
     scoreboard_cache["data"] = None
     scoreboard_cache["timestamp"] = 0
 
