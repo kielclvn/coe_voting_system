@@ -56,6 +56,7 @@
     .votes { font-weight: bold; color: #3F704D; margin-top: 5px; }
     .fb { font-size: 0.95em; color: #1a73e8; margin-top: 3px; }
     .darling { font-weight: bold; color: #d32f2f; margin-top: 5px; }
+    .percent { font-size: 0.9em; color: #555; margin-top: 3px; }
     form {
       margin-top: 40px;
       background: rgba(255,255,255,0.9);
@@ -101,6 +102,7 @@
       border-radius: 5px;
       border: 1px solid #FFD700;
     }
+    .invalid { background-color: #f8d7da; }
   </style>
 </head>
 <body>
@@ -137,6 +139,7 @@
           <th>Candidate ID</th>
           <th>Gender</th>
           <th>Timestamp</th>
+          <th>Valid?</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -209,7 +212,9 @@
             <h3>${cand.name}</h3>
             <p>${cand.org} • ${cand.program}</p>
             <div class="votes">System Votes: ${cand.system_votes}</div>
+            <div class="percent">System %: ${cand.system_percent}%</div>
             <div class="fb">FB Reactions: ${cand.fb_reactions}</div>
+            <div class="percent">FB %: ${cand.fb_percent}%</div>
             <div class="darling">Darling Score: ${cand.darling_score}</div>
           `;
           if (cand.gender === "male") {
@@ -225,9 +230,10 @@
           document.getElementById("candidate_select").appendChild(option);
         });
 
-        // Raw votes table
+                // Raw votes table
         votes.forEach(v => {
           let row = document.createElement("tr");
+          if (!v.is_valid) row.classList.add("invalid");
           row.innerHTML = `
             <td>${v.id}</td>
             <td>${v.ticket_id}</td>
@@ -235,6 +241,7 @@
             <td>${v.candidate_id}</td>
             <td>${v.gender}</td>
             <td>${v.timestamp}</td>
+            <td>${v.is_valid ? "Valid" : "Invalid"}</td>
           `;
           document.querySelector("#votesTable tbody").appendChild(row);
         });
@@ -244,7 +251,7 @@
       }
     }
 
-        // Search filter for votes table
+    // Search filter for votes table
     document.getElementById("searchInput").addEventListener("keyup", function() {
       const filter = this.value.toLowerCase();
       const rows = document.querySelectorAll("#votesTable tbody tr");

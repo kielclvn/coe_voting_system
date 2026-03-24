@@ -41,7 +41,8 @@ def init_db():
             student_name TEXT,
             candidate_id TEXT,
             gender TEXT,
-            timestamp TIMESTAMP
+            timestamp TIMESTAMP,
+            is_valid BOOLEAN DEFAULT TRUE
         )
     """)
     cursor.execute("""
@@ -86,14 +87,33 @@ init_db()
 def get_results():
     conn = get_db_connection()
     cursor = conn.cursor()
+
+    # Get total valid votes per gender
+    cursor.execute("""
+        SELECT gender, COUNT(*) 
+        FROM votes v
+        JOIN candidates c ON v.candidate_id = c.id
+        WHERE v.is_valid = TRUE
+        GROUP BY gender
+    """)
+    total_valid_votes = dict(cursor.fetchall())
+
+    # Get total fb reactions per gender
+    cursor.execute("""
+        SELECT c.gender, COALESCE(SUM(f.reactions),0)
+        FROM candidates c
+        LEFT JOIN fb_reactions f ON c.id = f.candidate_id
+        GROUP BY c.gender
+    """)
+    total_fb_reacts = dict(cursor.fetchall())
+
+    # Get candidate data
     cursor.execute("""
         SELECT c.id, c.name, c.org, c.program, c.gender, c.image,
                c.votes AS system_votes,
-               COALESCE(f.reactions, 0) AS fb_reactions,
-               ROUND(((c.votes * 0.5) + (COALESCE(f.reactions, 0) * 0.5))::numeric, 2) AS darling_score
+               COALESCE(f.reactions, 0) AS fb_reactions
         FROM candidates c
         LEFT JOIN fb_reactions f ON c.id = f.candidate_id
-        ORDER BY darling_score DESC
     """)
     rows = cursor.fetchall()
     cursor.close()
@@ -101,16 +121,29 @@ def get_results():
 
     results = []
     for row in rows:
+        cid, name, org, program, gender, image, sys_votes, fb_reacts = row
+
+        # Compute percentages
+        sys_total = total_valid_votes.get(gender, 0)
+        fb_total = total_fb_reacts.get(gender, 0)
+
+        sys_percent = (sys_votes / sys_total * 100) if sys_total > 0 else 0
+        fb_percent = (fb_reacts / fb_total * 100) if fb_total > 0 else 0
+
+        darling_score = round((sys_percent/100 * 50) + (fb_percent/100 * 50), 2)
+
         results.append({
-            "id": row[0],
-            "name": row[1],
-            "org": row[2],
-            "program": row[3],
-            "gender": row[4],
-            "image": row[5],
-            "system_votes": row[6],
-            "fb_reactions": row[7],
-            "darling_score": float(row[8])
+            "id": cid,
+            "name": name,
+            "org": org,
+            "program": program,
+            "gender": gender,
+            "image": image,
+            "system_votes": sys_votes,
+            "fb_reactions": fb_reacts,
+            "darling_score": darling_score,
+            "system_percent": round(sys_percent,2),
+            "fb_percent": round(fb_percent,2)
         })
     return results
 
@@ -147,7 +180,7 @@ def vote():
 
         cursor.execute("""
             SELECT COUNT(*) FROM votes
-            WHERE ticket_id=%s AND gender=%s AND timestamp BETWEEN %s AND %s
+            WHERE ticket_id=%s AND gender=%s AND timestamp BETWEEN %s AND %s AND is_valid=TRUE
         """, (ticket_id, gender, today_start, today_end))
         already_voted = cursor.fetchone()[0]
 
@@ -164,8 +197,8 @@ def vote():
         candidate_id = v.get("candidate_id")
         gender = v.get("gender")
         cursor.execute("""
-            INSERT INTO votes (ticket_id, student_name, candidate_id, gender, timestamp)
-            VALUES (%s, %s, %s, %s, %s)
+            INSERT INTO votes (ticket_id, student_name, candidate_id, gender, timestamp, is_valid)
+            VALUES (%s, %s, %s, %s, %s, TRUE)
         """, (ticket_id, student_name, candidate_id, gender, now))
         cursor.execute("UPDATE candidates SET votes = votes + 1 WHERE id=%s", (candidate_id,))
 
@@ -186,7 +219,7 @@ def results():
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT id, ticket_id, student_name, candidate_id, gender, timestamp
+        SELECT id, ticket_id, student_name, candidate_id, gender, timestamp, is_valid
         FROM votes
         ORDER BY timestamp DESC
     """)
@@ -202,7 +235,8 @@ def results():
             "student_name": row[2],
             "candidate_id": row[3],
             "gender": row[4],
-            "timestamp": row[5].isoformat() if row[5] else None
+            "timestamp": row[5].isoformat() if row[5] else None,
+            "is_valid": row[6]
         })
 
     return jsonify({
