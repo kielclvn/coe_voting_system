@@ -93,12 +93,13 @@ def get_results():
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
+        # specify c.gender para hindi ambiguous
         cursor.execute("""
-            SELECT gender, COUNT(*) 
+            SELECT c.gender, COUNT(*) 
             FROM votes v
             JOIN candidates c ON v.candidate_id = c.id
             WHERE v.is_valid = TRUE
-            GROUP BY gender
+            GROUP BY c.gender
         """)
         total_valid_votes = dict(cursor.fetchall())
 
