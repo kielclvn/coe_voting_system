@@ -26,64 +26,65 @@ def release_db_connection(conn):
 def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS candidates (
-            id TEXT PRIMARY KEY,
-            name TEXT,
-            org TEXT,
-            program TEXT,
-            gender TEXT,
-            image TEXT,
-            votes INTEGER DEFAULT 0
-        )
-    """)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS votes (
-            id SERIAL PRIMARY KEY,
-            ticket_id TEXT,
-            student_name TEXT,
-            candidate_id TEXT,
-            gender TEXT,
-            timestamp TIMESTAMP,
-            is_valid BOOLEAN DEFAULT TRUE
-        )
-    """)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS fb_reactions (
-            candidate_id TEXT PRIMARY KEY,
-            reactions INTEGER DEFAULT 0
-        )
-    """)
-
-    candidates = [
-        ("cand001","Benj Anthony Gabo","Ugnayang Kayumanggi","BSE Filipino","male","mr1.jpg"),
-        ("cand002","Lance Christopher Calixto","HM Society","BSHM","male","mr2.jpg"),
-        ("cand003","Yuan Sales","Daskalos Coalition","BEED","male","mr3.jpg"),
-        ("cand004","Neo Salangsang","Daskalos Coalition","BEED","male","mr4.jpg"),
-        ("cand005","Victor Angello Dauag","The Elite Guild","BSE English","male","mr5.jpg"),
-        ("cand006","John Edward Sabado","Ugnayang Kayumanggi","BSE Filipino","male","mr6.jpg"),
-        ("cand007","Diego Salvador Sandico","HM Society","BSHM","male","mr7.jpg"),
-        ("cand008","Alex Ventilacion","The Elite Guild","BSE English","male","mr8.jpg"),
-        ("cand009","Denise Banaag","Ugnayang Kayumanggi","BSE Filipino","female","ms1.jpg"),
-        ("cand010","Kiara Andrie Simon","HM Society","BSHM","female","ms2.jpg"),
-        ("cand011","Ryzamae Ballesteros","Daskalos Coalition","BEED","female","ms3.jpg"),
-        ("cand012","Jonalyn Tepace","Daskalos Coalition","BEED","female","ms4.jpg"),
-        ("cand013","Nadine Marinay","The Elite Guild","BSE English","female","ms5.jpg"),
-        ("cand014","Ashley Kate Lobarbio","Ugnayang Kayumanggi","BSE Filipino","female","ms6.jpg"),
-        ("cand015","Jonna Marie Azarcon","HM Society","BSHM","female","ms7.jpg"),
-        ("cand016","Jhasmine Joy Lucambo","The Elite Guild","BSE English","female","ms8.jpg"),
-    ]
-    for cand in candidates:
+    try:
         cursor.execute("""
-        INSERT INTO candidates (id, name, org, program, gender, image, votes)
-        VALUES (%s, %s, %s, %s, %s, %s, 0)
-        ON CONFLICT (id) DO NOTHING
-    """, cand)
+            CREATE TABLE IF NOT EXISTS candidates (
+                id TEXT PRIMARY KEY,
+                name TEXT,
+                org TEXT,
+                program TEXT,
+                gender TEXT,
+                image TEXT,
+                votes INTEGER DEFAULT 0
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS votes (
+                id SERIAL PRIMARY KEY,
+                ticket_id TEXT,
+                student_name TEXT,
+                candidate_id TEXT,
+                gender TEXT,
+                timestamp TIMESTAMP,
+                is_valid BOOLEAN DEFAULT TRUE
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS fb_reactions (
+                candidate_id TEXT PRIMARY KEY,
+                reactions INTEGER DEFAULT 0
+            )
+        """)
 
-    conn.commit()
-    cursor.close()
-    release_db_connection(conn)
+        candidates = [
+            ("cand001","Benj Anthony Gabo","Ugnayang Kayumanggi","BSE Filipino","male","mr1.jpg"),
+            ("cand002","Lance Christopher Calixto","HM Society","BSHM","male","mr2.jpg"),
+            ("cand003","Yuan Sales","Daskalos Coalition","BEED","male","mr3.jpg"),
+            ("cand004","Neo Salangsang","Daskalos Coalition","BEED","male","mr4.jpg"),
+            ("cand005","Victor Angello Dauag","The Elite Guild","BSE English","male","mr5.jpg"),
+            ("cand006","John Edward Sabado","Ugnayang Kayumanggi","BSE Filipino","male","mr6.jpg"),
+            ("cand007","Diego Salvador Sandico","HM Society","BSHM","male","mr7.jpg"),
+            ("cand008","Alex Ventilacion","The Elite Guild","BSE English","male","mr8.jpg"),
+            ("cand009","Denise Banaag","Ugnayang Kayumanggi","BSE Filipino","female","ms1.jpg"),
+            ("cand010","Kiara Andrie Simon","HM Society","BSHM","female","ms2.jpg"),
+            ("cand011","Ryzamae Ballesteros","Daskalos Coalition","BEED","female","ms3.jpg"),
+            ("cand012","Jonalyn Tepace","Daskalos Coalition","BEED","female","ms4.jpg"),
+            ("cand013","Nadine Marinay","The Elite Guild","BSE English","female","ms5.jpg"),
+            ("cand014","Ashley Kate Lobarbio","Ugnayang Kayumanggi","BSE Filipino","female","ms6.jpg"),
+            ("cand015","Jonna Marie Azarcon","HM Society","BSHM","female","ms7.jpg"),
+            ("cand016","Jhasmine Joy Lucambo","The Elite Guild","BSE English","female","ms8.jpg"),
+        ]
+        for cand in candidates:
+            cursor.execute("""
+            INSERT INTO candidates (id, name, org, program, gender, image, votes)
+            VALUES (%s, %s, %s, %s, %s, %s, 0)
+            ON CONFLICT (id) DO NOTHING
+        """, cand)
+
+        conn.commit()
+    finally:
+        cursor.close()
+        release_db_connection(conn)
 
 init_db()
 
@@ -91,34 +92,35 @@ init_db()
 def get_results():
     conn = get_db_connection()
     cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            SELECT gender, COUNT(*) 
+            FROM votes v
+            JOIN candidates c ON v.candidate_id = c.id
+            WHERE v.is_valid = TRUE
+            GROUP BY gender
+        """)
+        total_valid_votes = dict(cursor.fetchall())
 
-    cursor.execute("""
-        SELECT gender, COUNT(*) 
-        FROM votes v
-        JOIN candidates c ON v.candidate_id = c.id
-        WHERE v.is_valid = TRUE
-        GROUP BY gender
-    """)
-    total_valid_votes = dict(cursor.fetchall())
+        cursor.execute("""
+            SELECT c.gender, COALESCE(SUM(f.reactions),0)
+            FROM candidates c
+            LEFT JOIN fb_reactions f ON c.id = f.candidate_id
+            GROUP BY c.gender
+        """)
+        total_fb_reacts = dict(cursor.fetchall())
 
-    cursor.execute("""
-        SELECT c.gender, COALESCE(SUM(f.reactions),0)
-        FROM candidates c
-        LEFT JOIN fb_reactions f ON c.id = f.candidate_id
-        GROUP BY c.gender
-    """)
-    total_fb_reacts = dict(cursor.fetchall())
-
-    cursor.execute("""
-        SELECT c.id, c.name, c.org, c.program, c.gender, c.image,
-               c.votes AS system_votes,
-               COALESCE(f.reactions, 0) AS fb_reactions
-        FROM candidates c
-        LEFT JOIN fb_reactions f ON c.id = f.candidate_id
-    """)
-    rows = cursor.fetchall()
-    cursor.close()
-    release_db_connection(conn)
+        cursor.execute("""
+            SELECT c.id, c.name, c.org, c.program, c.gender, c.image,
+                   c.votes AS system_votes,
+                   COALESCE(f.reactions, 0) AS fb_reactions
+            FROM candidates c
+            LEFT JOIN fb_reactions f ON c.id = f.candidate_id
+        """)
+        rows = cursor.fetchall()
+    finally:
+        cursor.close()
+        release_db_connection(conn)
 
     results = []
     for row in rows:
@@ -164,38 +166,37 @@ def vote():
 
     conn = get_db_connection()
     cursor = conn.cursor()
+    try:
+        errors = []
+        for v in votes:
+            candidate_id = v.get("candidate_id")
+            gender = v.get("gender")
+            today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            today_end = today_start + timedelta(days=1, seconds=-1)
+            cursor.execute("""
+                SELECT COUNT(*) FROM votes
+                WHERE ticket_id=%s AND gender=%s AND timestamp BETWEEN %s AND %s AND is_valid=TRUE
+            """, (ticket_id, gender, today_start, today_end))
+            already_voted = cursor.fetchone()[0]
+            if already_voted > 0:
+                errors.append(gender)
 
-    errors = []
-    for v in votes:
-        candidate_id = v.get("candidate_id")
-        gender = v.get("gender")
-        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-        today_end = today_start + timedelta(days=1, seconds=-1)
-        cursor.execute("""
-            SELECT COUNT(*) FROM votes
-            WHERE ticket_id=%s AND gender=%s AND timestamp BETWEEN %s AND %s AND is_valid=TRUE
-        """, (ticket_id, gender, today_start, today_end))
-        already_voted = cursor.fetchone()[0]
-        if already_voted > 0:
-            errors.append(gender)
+        if errors:
+            return jsonify({"message": f"You have already voted today for {', '.join(errors)} category."}), 400
 
-    if errors:
+        for v in votes:
+            candidate_id = v.get("candidate_id")
+            gender = v.get("gender")
+            cursor.execute("""
+                INSERT INTO votes (ticket_id, student_name, candidate_id, gender, timestamp, is_valid)
+                VALUES (%s, %s, %s, %s, %s, TRUE)
+            """, (ticket_id, student_name, candidate_id, gender, now))
+            cursor.execute("UPDATE candidates SET votes = votes + 1 WHERE id=%s", (candidate_id,))
+
+        conn.commit()
+    finally:
         cursor.close()
         release_db_connection(conn)
-        return jsonify({"message": f"You have already voted today for {', '.join(errors)} category."}), 400
-
-    for v in votes:
-        candidate_id = v.get("candidate_id")
-        gender = v.get("gender")
-        cursor.execute("""
-            INSERT INTO votes (ticket_id, student_name, candidate_id, gender, timestamp, is_valid)
-            VALUES (%s, %s, %s, %s, %s, TRUE)
-        """, (ticket_id, student_name, candidate_id, gender, now))
-        cursor.execute("UPDATE candidates SET votes = votes + 1 WHERE id=%s", (candidate_id,))
-
-    conn.commit()
-    cursor.close()
-    release_db_connection(conn)
 
     scoreboard_cache["data"] = None
     scoreboard_cache["timestamp"] = 0
@@ -207,14 +208,16 @@ def results():
     candidates_data = get_results()
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("""
-        SELECT id, ticket_id, student_name, candidate_id, gender, timestamp, is_valid
-        FROM votes
-        ORDER BY timestamp DESC
-    """)
-    votes_rows = cursor.fetchall()
-    cursor.close()
-    release_db_connection(conn)
+    try:
+        cursor.execute("""
+            SELECT id, ticket_id, student_name, candidate_id, gender, timestamp, is_valid
+            FROM votes
+            ORDER BY timestamp DESC
+        """)
+        votes_rows = cursor.fetchall()
+    finally:
+        cursor.close()
+        release_db_connection(conn)
 
     votes_data = []
     for row in votes_rows:
@@ -245,14 +248,16 @@ def update_fb():
 
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("""
-        INSERT INTO fb_reactions (candidate_id, reactions)
-        VALUES (%s, %s)
-        ON CONFLICT (candidate_id) DO UPDATE SET reactions = EXCLUDED.reactions
-    """, (candidate_id, reactions))
-    conn.commit()
-    cursor.close()
-    release_db_connection(conn)
+    try:
+        cursor.execute("""
+            INSERT INTO fb_reactions (candidate_id, reactions)
+            VALUES (%s, %s)
+            ON CONFLICT (candidate_id) DO UPDATE SET reactions = EXCLUDED.reactions
+        """, (candidate_id, reactions))
+        conn.commit()
+    finally:
+        cursor.close()
+        release_db_connection(conn)
 
     scoreboard_cache["data"] = None
     scoreboard_cache["timestamp"] = 0

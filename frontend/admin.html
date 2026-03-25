@@ -103,6 +103,11 @@
       border: 1px solid #FFD700;
     }
     .invalid { background-color: #f8d7da; }
+    #error-message {
+      margin-top: 10px;
+      color: #ff4444;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
@@ -144,6 +149,7 @@
       </thead>
       <tbody></tbody>
     </table>
+    <p id="error-message"></p>
 
     <!-- Admin Form to Update FB Reactions -->
     <form id="fbForm">
@@ -193,6 +199,11 @@
     async function loadResults() {
       try {
         let res = await fetch("/results");
+        if (!res.ok) {
+          document.getElementById("error-message").innerText =
+            "Error loading results (status " + res.status + ")";
+          return;
+        }
         let data = await res.json();
 
         candidates = data.candidates;
@@ -202,6 +213,7 @@
         document.getElementById("msCandidates").innerHTML = "";
         document.getElementById("candidate_select").innerHTML = "";
         document.querySelector("#votesTable tbody").innerHTML = "";
+        document.getElementById("error-message").innerText = "";
 
         // Candidate cards
         candidates.forEach(cand => {
@@ -230,7 +242,7 @@
           document.getElementById("candidate_select").appendChild(option);
         });
 
-                // Raw votes table
+        // Raw votes table
         votes.forEach(v => {
           let row = document.createElement("tr");
           if (!v.is_valid) row.classList.add("invalid");
@@ -248,6 +260,8 @@
 
       } catch (err) {
         console.error("Error loading results:", err);
+        document.getElementById("error-message").innerText =
+          "Error loading results: " + err.message;
       }
     }
 
@@ -278,11 +292,18 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ candidate_id, reactions })
         });
+        if (!res.ok) {
+          document.getElementById("update-message").innerText =
+            "Error updating FB reactions (status " + res.status + ")";
+          return;
+        }
         const data = await res.json();
         document.getElementById("update-message").innerText = data.message;
         loadResults(); // refresh results after update
       } catch (err) {
         console.error("Error updating FB reactions:", err);
+        document.getElementById("update-message").innerText =
+          "Error updating FB reactions: " + err.message;
       }
     });
   </script>

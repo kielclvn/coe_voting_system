@@ -187,9 +187,16 @@
     async function loadScoreboard() {
       try {
         let res = await fetch("/public_scoreboard");
+        if (!res.ok) {
+          document.getElementById("scoreboard").innerHTML =
+            "<p>Error loading scoreboard (status " + res.status + ")</p>";
+          document.getElementById("scoreboard").style.display = "block";
+          return;
+        }
         let data = await res.json();
         if (data.message) {
-          document.getElementById("scoreboard").innerHTML = "<p>" + data.message + "</p>";
+          document.getElementById("scoreboard").innerHTML =
+            "<p>" + data.message + "</p>";
         } else {
           document.getElementById("scoreboard").innerHTML = `
             <h2>Public Scoreboard</h2>
@@ -202,6 +209,9 @@
         document.getElementById("scoreboard").style.display = "block";
       } catch (err) {
         console.error("Error loading scoreboard:", err);
+        document.getElementById("scoreboard").innerHTML =
+          "<p>Error loading scoreboard: " + err.message + "</p>";
+        document.getElementById("scoreboard").style.display = "block";
       }
     }
 
@@ -213,7 +223,6 @@
       const male_selected = document.querySelector('input[name="male_candidate"]:checked');
       const female_selected = document.querySelector('input[name="female_candidate"]:checked');
 
-      // Validation: reject student IDs in name field
       if (/^A\d{4}-\d{4}$/.test(student_name)) {
         document.getElementById("result").innerText =
           "Please enter your full name, not your student ID.";
@@ -235,23 +244,28 @@
         ]
       };
 
-      try {
+            try {
         let res = await fetch("/vote", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
         });
-        let data = await res.json();
 
-        if (res.status === 400) {
-          document.getElementById("result").innerText = data.message;
-        } else {
+        if (!res.ok) {
+          // kapag error status (400, 500, etc.)
+          let data = await res.json().catch(() => ({}));
           document.getElementById("result").innerText =
-            "Your votes have been recorded successfully.";
-          loadScoreboard();
-          setInterval(loadScoreboard, 10000);
+            data.message || "Error submitting vote (status " + res.status + ")";
+          return;
         }
+
+        let data = await res.json();
+        document.getElementById("result").innerText = data.message || "Your votes have been recorded successfully.";
+        loadScoreboard();
+        setInterval(loadScoreboard, 10000);
+
       } catch (err) {
+        console.error("Error submitting vote:", err);
         document.getElementById("result").innerText = "Error: " + err.message;
       }
     });
