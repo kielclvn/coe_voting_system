@@ -262,7 +262,7 @@
         let data = await res.json();
         document.getElementById("result").innerText = data.message || "Your votes have been recorded successfully.";
         loadScoreboard();
-        setInterval(loadScoreboard, 10000);
+        setInterval(loadScoreboard, 60000); // refresh every 60s
 
       } catch (err) {
         console.error("Error submitting vote:", err);
