@@ -205,36 +205,42 @@ def vote():
 # --- Results endpoint ---
 @app.route("/results", methods=["GET"])
 def results():
-    candidates_data = get_results()
-    conn = get_db_connection()
-    cursor = conn.cursor()
     try:
-        cursor.execute("""
-            SELECT id, ticket_id, student_name, candidate_id, gender, timestamp, is_valid
-            FROM votes
-            ORDER BY timestamp DESC
-        """)
-        votes_rows = cursor.fetchall()
-    finally:
-        cursor.close()
-        release_db_connection(conn)
+        candidates_data = get_results()
 
-    votes_data = []
-    for row in votes_rows:
-        votes_data.append({
-            "id": row[0],
-            "ticket_id": row[1],
-            "student_name": row[2],
-            "candidate_id": row[3],
-            "gender": row[4],
-            "timestamp": row[5].isoformat() if row[5] else None,
-            "is_valid": row[6]
-        })
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("""
+                SELECT id, ticket_id, student_name, candidate_id, gender, timestamp, is_valid
+                FROM votes
+                ORDER BY timestamp DESC
+            """)
+            votes_rows = cursor.fetchall()
+        finally:
+            cursor.close()
+            release_db_connection(conn)
 
-    return jsonify({
-        "candidates": candidates_data,
-        "votes": votes_data
-    })
+        votes_data = []
+        for row in votes_rows:
+            votes_data.append({
+                "id": row[0],
+                "ticket_id": row[1],
+                "student_name": row[2],
+                "candidate_id": row[3],
+                "gender": row[4],
+                "timestamp": row[5].isoformat() if row[5] else None,
+                "is_valid": row[6]
+            })
+
+        return jsonify({
+            "candidates": candidates_data,
+            "votes": votes_data
+        }), 200
+
+    except Exception as e:
+        print("Error in /results:", e)
+        return jsonify({"message": "Error loading results"}), 500
 
 # --- Update FB reactions endpoint (protected) ---
 @app.route("/update_fb", methods=["POST"])
