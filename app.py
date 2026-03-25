@@ -1,8 +1,8 @@
 from flask import Flask, request, jsonify, send_from_directory, session
-import psycopg2
 import os
 from datetime import datetime, timedelta
 import pytz
+from psycopg2 import pool
 
 app = Flask(__name__)
 app.secret_key = "supersecretkey"  # palitan mo ito ng mas secure na string
@@ -12,11 +12,15 @@ PH_TZ = pytz.timezone("Asia/Manila")
 # --- Simple in-memory cache for scoreboard ---
 scoreboard_cache = {"data": None, "timestamp": 0}
 
-# --- Helper: DB connection ---
+# --- Connection Pool Setup ---
 DATABASE_URL = os.environ.get("DATABASE_URL")
+db_pool = pool.SimpleConnectionPool(1, 10, DATABASE_URL)
 
 def get_db_connection():
-    return psycopg2.connect(DATABASE_URL)
+    return db_pool.getconn()
+
+def release_db_connection(conn):
+    db_pool.putconn(conn)
 
 # --- Initialize DB with candidates ---
 def init_db():
@@ -79,7 +83,7 @@ def init_db():
 
     conn.commit()
     cursor.close()
-    conn.close()
+    release_db_connection(conn)
 
 init_db()
 
@@ -88,7 +92,6 @@ def get_results():
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # Get total valid votes per gender
     cursor.execute("""
         SELECT gender, COUNT(*) 
         FROM votes v
@@ -98,7 +101,6 @@ def get_results():
     """)
     total_valid_votes = dict(cursor.fetchall())
 
-    # Get total fb reactions per gender
     cursor.execute("""
         SELECT c.gender, COALESCE(SUM(f.reactions),0)
         FROM candidates c
@@ -107,7 +109,6 @@ def get_results():
     """)
     total_fb_reacts = dict(cursor.fetchall())
 
-    # Get candidate data
     cursor.execute("""
         SELECT c.id, c.name, c.org, c.program, c.gender, c.image,
                c.votes AS system_votes,
@@ -117,19 +118,15 @@ def get_results():
     """)
     rows = cursor.fetchall()
     cursor.close()
-    conn.close()
+    release_db_connection(conn)
 
     results = []
     for row in rows:
         cid, name, org, program, gender, image, sys_votes, fb_reacts = row
-
-        # Compute percentages
         sys_total = total_valid_votes.get(gender, 0)
         fb_total = total_fb_reacts.get(gender, 0)
-
         sys_percent = (sys_votes / sys_total * 100) if sys_total > 0 else 0
         fb_percent = (fb_reacts / fb_total * 100) if fb_total > 0 else 0
-
         darling_score = round((sys_percent/100 * 50) + (fb_percent/100 * 50), 2)
 
         results.append({
@@ -155,7 +152,6 @@ def vote():
     student_name = data.get("student_name")
     votes = data.get("votes", [])
 
-    # safeguard: reject student IDs in name field
     if student_name and student_name.startswith("A") and "-" in student_name:
         return jsonify({"message": "Please enter your full name, not your student ID."}), 400
 
@@ -169,30 +165,25 @@ def vote():
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # collect errors per gender
     errors = []
     for v in votes:
         candidate_id = v.get("candidate_id")
         gender = v.get("gender")
-
         today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
         today_end = today_start + timedelta(days=1, seconds=-1)
-
         cursor.execute("""
             SELECT COUNT(*) FROM votes
             WHERE ticket_id=%s AND gender=%s AND timestamp BETWEEN %s AND %s AND is_valid=TRUE
         """, (ticket_id, gender, today_start, today_end))
         already_voted = cursor.fetchone()[0]
-
         if already_voted > 0:
             errors.append(gender)
 
     if errors:
         cursor.close()
-        conn.close()
+        release_db_connection(conn)
         return jsonify({"message": f"You have already voted today for {', '.join(errors)} category."}), 400
 
-    # if no errors, insert votes
     for v in votes:
         candidate_id = v.get("candidate_id")
         gender = v.get("gender")
@@ -204,18 +195,16 @@ def vote():
 
     conn.commit()
     cursor.close()
-    conn.close()
+    release_db_connection(conn)
 
     scoreboard_cache["data"] = None
     scoreboard_cache["timestamp"] = 0
-
     return jsonify({"message": "Votes recorded successfully."}), 200
 
-# --- Results endpoint (admin full view) ---
+# --- Results endpoint ---
 @app.route("/results", methods=["GET"])
 def results():
     candidates_data = get_results()
-
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
@@ -225,7 +214,7 @@ def results():
     """)
     votes_rows = cursor.fetchall()
     cursor.close()
-    conn.close()
+    release_db_connection(conn)
 
     votes_data = []
     for row in votes_rows:
@@ -263,7 +252,7 @@ def update_fb():
     """, (candidate_id, reactions))
     conn.commit()
     cursor.close()
-    conn.close()
+    release_db_connection(conn)
 
     scoreboard_cache["data"] = None
     scoreboard_cache["timestamp"] = 0
