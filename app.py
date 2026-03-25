@@ -93,11 +93,11 @@ def get_results():
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        # specify c.gender para hindi ambiguous
+        # FIX: declare alias AS v para gumana ang v.is_valid
         cursor.execute("""
             SELECT c.gender, COUNT(*) 
-            FROM votes v
-            JOIN candidates c ON v.candidate_id = c.id
+            FROM votes AS v
+            JOIN candidates AS c ON v.candidate_id = c.id
             WHERE v.is_valid = TRUE
             GROUP BY c.gender
         """)
@@ -105,8 +105,8 @@ def get_results():
 
         cursor.execute("""
             SELECT c.gender, COALESCE(SUM(f.reactions),0)
-            FROM candidates c
-            LEFT JOIN fb_reactions f ON c.id = f.candidate_id
+            FROM candidates AS c
+            LEFT JOIN fb_reactions AS f ON c.id = f.candidate_id
             GROUP BY c.gender
         """)
         total_fb_reacts = dict(cursor.fetchall())
@@ -115,8 +115,8 @@ def get_results():
             SELECT c.id, c.name, c.org, c.program, c.gender, c.image,
                    c.votes AS system_votes,
                    COALESCE(f.reactions, 0) AS fb_reactions
-            FROM candidates c
-            LEFT JOIN fb_reactions f ON c.id = f.candidate_id
+            FROM candidates AS c
+            LEFT JOIN fb_reactions AS f ON c.id = f.candidate_id
         """)
         rows = cursor.fetchall()
     finally:
