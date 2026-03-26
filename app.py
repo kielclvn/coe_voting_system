@@ -322,6 +322,29 @@ def invalidate_vote():
 
     return jsonify({"message": f"Vote {vote_id} marked invalid."}), 200
 
+# --- Revalidate vote endpoint (protected) ---
+@app.route("/revalidate_vote", methods=["POST"])
+def revalidate_vote():
+    if not session.get("admin_logged_in"):
+        return jsonify({"message": "Unauthorized"}), 403
+
+    data = request.get_json()
+    vote_id = data.get("vote_id")
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("UPDATE votes SET is_valid=TRUE WHERE id=%s", (vote_id,))
+        conn.commit()
+    finally:
+        cursor.close()
+        release_db_connection(conn)
+
+    # Clear cache so results refresh
+    scoreboard_cache["data"] = None
+    scoreboard_cache["timestamp"] = 0
+
+    return jsonify({"message": f"Vote {vote_id} revalidated."}), 200
 
 # --- Admin login/logout ---
 @app.route("/login", methods=["POST"])
