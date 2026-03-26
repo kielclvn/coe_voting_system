@@ -76,10 +76,10 @@ def init_db():
         ]
         for cand in candidates:
             cursor.execute("""
-            INSERT INTO candidates (id, name, org, program, gender, image, votes)
-            VALUES (%s, %s, %s, %s, %s, %s, 0)
-            ON CONFLICT (id) DO NOTHING
-        """, cand)
+                INSERT INTO candidates (id, name, org, program, gender, image, votes)
+                VALUES (%s, %s, %s, %s, %s, %s, 0)
+                ON CONFLICT (id) DO NOTHING
+            """, cand)
 
         conn.commit()
     finally:
@@ -93,20 +93,19 @@ def get_results():
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        # FIX: declare alias AS v para gumana ang v.is_valid
         cursor.execute("""
             SELECT c.gender, COUNT(*) 
-            FROM votes AS v
-            JOIN candidates AS c ON v.candidate_id = c.id
-            WHERE v.is_valid = TRUE
+            FROM votes
+            JOIN candidates c ON votes.candidate_id = c.id
+            WHERE votes.is_valid = TRUE
             GROUP BY c.gender
         """)
         total_valid_votes = dict(cursor.fetchall())
 
         cursor.execute("""
             SELECT c.gender, COALESCE(SUM(f.reactions),0)
-            FROM candidates AS c
-            LEFT JOIN fb_reactions AS f ON c.id = f.candidate_id
+            FROM candidates c
+            LEFT JOIN fb_reactions f ON c.id = f.candidate_id
             GROUP BY c.gender
         """)
         total_fb_reacts = dict(cursor.fetchall())
@@ -115,8 +114,8 @@ def get_results():
             SELECT c.id, c.name, c.org, c.program, c.gender, c.image,
                    c.votes AS system_votes,
                    COALESCE(f.reactions, 0) AS fb_reactions
-            FROM candidates AS c
-            LEFT JOIN fb_reactions AS f ON c.id = f.candidate_id
+            FROM candidates c
+            LEFT JOIN fb_reactions f ON c.id = f.candidate_id
         """)
         rows = cursor.fetchall()
     finally:
@@ -146,7 +145,6 @@ def get_results():
             "fb_percent": round(fb_percent,2)
         })
     return results
-
 
 # --- Voting endpoint ---
 @app.route("/vote", methods=["POST"])
@@ -209,7 +207,6 @@ def vote():
 def results():
     now = datetime.now().timestamp()
 
-    # If cache is fresh (within 60 seconds), return cached data
     if scoreboard_cache["data"] and (now - scoreboard_cache["timestamp"] < 60):
         return jsonify(scoreboard_cache["data"]), 200
 
@@ -246,7 +243,6 @@ def results():
             "votes": votes_data
         }
 
-        # Update cache
         scoreboard_cache["data"] = response_data
         scoreboard_cache["timestamp"] = now
 
