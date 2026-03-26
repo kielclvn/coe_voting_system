@@ -147,6 +147,7 @@ def get_results():
         })
     return results
 
+
 # --- Voting endpoint ---
 @app.route("/vote", methods=["POST"])
 def vote():
@@ -203,9 +204,15 @@ def vote():
     scoreboard_cache["timestamp"] = 0
     return jsonify({"message": "Votes recorded successfully."}), 200
 
-# --- Results endpoint ---
+# --- Results endpoint with caching ---
 @app.route("/results", methods=["GET"])
 def results():
+    now = datetime.now().timestamp()
+
+    # If cache is fresh (within 60 seconds), return cached data
+    if scoreboard_cache["data"] and (now - scoreboard_cache["timestamp"] < 60):
+        return jsonify(scoreboard_cache["data"]), 200
+
     try:
         candidates_data = get_results()
 
@@ -234,10 +241,16 @@ def results():
                 "is_valid": row[6]
             })
 
-        return jsonify({
+        response_data = {
             "candidates": candidates_data,
             "votes": votes_data
-        }), 200
+        }
+
+        # Update cache
+        scoreboard_cache["data"] = response_data
+        scoreboard_cache["timestamp"] = now
+
+        return jsonify(response_data), 200
 
     except Exception as e:
         print("Error in /results:", e)
