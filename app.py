@@ -93,15 +93,17 @@ def get_results():
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
+        # Total valid votes per gender
         cursor.execute("""
             SELECT c.gender, COUNT(*) 
-            FROM votes
-            JOIN candidates c ON votes.candidate_id = c.id
-            WHERE votes.is_valid = TRUE
+            FROM votes v
+            JOIN candidates c ON v.candidate_id = c.id
+            WHERE v.is_valid = TRUE
             GROUP BY c.gender
         """)
         total_valid_votes = dict(cursor.fetchall())
 
+        # Total FB reactions per gender
         cursor.execute("""
             SELECT c.gender, COALESCE(SUM(f.reactions),0)
             FROM candidates c
@@ -110,12 +112,15 @@ def get_results():
         """)
         total_fb_reacts = dict(cursor.fetchall())
 
+        # Candidate details with valid votes only
         cursor.execute("""
             SELECT c.id, c.name, c.org, c.program, c.gender, c.image,
-                   c.votes AS system_votes,
+                   COUNT(v.id) AS system_votes,
                    COALESCE(f.reactions, 0) AS fb_reactions
             FROM candidates c
+            LEFT JOIN votes v ON c.id = v.candidate_id AND v.is_valid = TRUE
             LEFT JOIN fb_reactions f ON c.id = f.candidate_id
+            GROUP BY c.id, c.name, c.org, c.program, c.gender, c.image, f.reactions
         """)
         rows = cursor.fetchall()
     finally:
@@ -127,9 +132,13 @@ def get_results():
         cid, name, org, program, gender, image, sys_votes, fb_reacts = row
         sys_total = total_valid_votes.get(gender, 0)
         fb_total = total_fb_reacts.get(gender, 0)
+
         sys_percent = (sys_votes / sys_total * 100) if sys_total > 0 else 0
         fb_percent = (fb_reacts / fb_total * 100) if fb_total > 0 else 0
-        darling_score = round((sys_percent/100 * 50) + (fb_percent/100 * 50), 2)
+
+        # Darling score (0–1 scale) then convert to percent
+        darling_score = (sys_percent/100 * 0.5) + (fb_percent/100 * 0.5)
+        darling_percent = round(darling_score * 100, 2)
 
         results.append({
             "id": cid,
@@ -140,9 +149,10 @@ def get_results():
             "image": image,
             "system_votes": sys_votes,
             "fb_reactions": fb_reacts,
-            "darling_score": darling_score,
-            "system_percent": round(sys_percent,2),
-            "fb_percent": round(fb_percent,2)
+            "system_percent": round(sys_percent, 2),
+            "fb_percent": round(fb_percent, 2),
+            "darling_score": round(darling_score, 4),  # keep raw score
+            "darling_percent": darling_percent         # percent display
         })
     return results
 

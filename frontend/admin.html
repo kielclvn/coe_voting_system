@@ -239,8 +239,9 @@
             <div class="percent">System %: ${cand.system_percent}%</div>
             <div class="fb">FB Reactions: ${cand.fb_reactions}</div>
             <div class="percent">FB %: ${cand.fb_percent}%</div>
-            <div class="darling">Darling Score: ${cand.darling_score}</div>
+            <div class="darling">Darling Score: ${cand.darling_percent}%</div>
           `;
+
           if (cand.gender === "male") {
             document.getElementById("mrCandidates").appendChild(card);
           } else {
