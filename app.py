@@ -280,6 +280,30 @@ def update_fb():
 
     return jsonify({"message": f"FB reactions updated for candidate {candidate_id}."}), 200
 
+# --- Invalidate vote endpoint (protected) ---
+@app.route("/invalidate_vote", methods=["POST"])
+def invalidate_vote():
+    if not session.get("admin_logged_in"):
+        return jsonify({"message": "Unauthorized"}), 403
+
+    data = request.get_json()
+    vote_id = data.get("vote_id")
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("UPDATE votes SET is_valid=FALSE WHERE id=%s", (vote_id,))
+        conn.commit()
+    finally:
+        cursor.close()
+        release_db_connection(conn)
+
+    # Clear cache so results refresh
+    scoreboard_cache["data"] = None
+    scoreboard_cache["timestamp"] = 0
+
+    return jsonify({"message": f"Vote {vote_id} marked invalid."}), 200
+
 # --- Admin login/logout ---
 @app.route("/login", methods=["POST"])
 def login():

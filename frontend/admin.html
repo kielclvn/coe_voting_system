@@ -108,6 +108,17 @@
       color: #ff4444;
       font-weight: bold;
     }
+    .invalidate-btn {
+      padding: 5px 10px;
+      background: #d32f2f;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .invalidate-btn:hover {
+      background: #b71c1c;
+    }
   </style>
 </head>
 <body>
@@ -145,6 +156,7 @@
           <th>Gender</th>
           <th>Timestamp</th>
           <th>Valid?</th>
+          <th>Action</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -184,7 +196,7 @@
         document.getElementById("login-section").classList.add("hidden");
         document.getElementById("dashboard-section").classList.remove("hidden");
         loadResults();
-        setInterval(loadResults, 60000); // refresh every 60s
+        setInterval(loadResults, 60000);
       }
     }
 
@@ -254,6 +266,9 @@
             <td>${v.gender}</td>
             <td>${v.timestamp}</td>
             <td>${v.is_valid ? "Valid" : "Invalid"}</td>
+            <td>
+              ${v.is_valid ? `<button class="invalidate-btn" onclick="invalidateVote(${v.id})">Invalidate</button>` : ""}
+            </td>
           `;
           document.querySelector("#votesTable tbody").appendChild(row);
         });
@@ -299,13 +314,30 @@
         }
         const data = await res.json();
         document.getElementById("update-message").innerText = data.message;
-        loadResults(); // refresh results after update
+        loadResults();
       } catch (err) {
         console.error("Error updating FB reactions:", err);
         document.getElementById("update-message").innerText =
           "Error updating FB reactions: " + err.message;
       }
     });
+
+    // Invalidate vote function
+    async function invalidateVote(voteId) {
+      try {
+        const res = await fetch("/invalidate_vote", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ vote_id: voteId })
+        });
+        const data = await res.json();
+        alert(data.message);
+        loadResults(); // refresh after invalidation
+      } catch (err) {
+        console.error("Error invalidating vote:", err);
+        alert("Error invalidating vote: " + err.message);
+      }
+    }
   </script>
 </body>
 </html>
