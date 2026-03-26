@@ -151,8 +151,8 @@ def get_results():
             "fb_reactions": fb_reacts,
             "system_percent": round(sys_percent, 2),
             "fb_percent": round(fb_percent, 2),
-            "darling_score": round(darling_score, 4),  # keep raw score
-            "darling_percent": darling_percent         # percent display
+            "darling_score": round(darling_score, 4),
+            "darling_percent": darling_percent
         })
     return results
 
@@ -173,6 +173,12 @@ def vote():
 
     if now < start or now > end:
         return jsonify({"message": "Voting is closed. Valid period is March 23–30, Philippine Time."}), 400
+
+    # Default multiplier
+    multiplier = 1
+    # Double votes rule: March 26, 7–10 PM PH time
+    if (now.date() == datetime(2026, 3, 26).date() and 19 <= now.hour < 22):
+        multiplier = 2
 
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -201,7 +207,7 @@ def vote():
                 INSERT INTO votes (ticket_id, student_name, candidate_id, gender, timestamp, is_valid)
                 VALUES (%s, %s, %s, %s, %s, TRUE)
             """, (ticket_id, student_name, candidate_id, gender, now))
-            cursor.execute("UPDATE candidates SET votes = votes + 1 WHERE id=%s", (candidate_id,))
+            cursor.execute("UPDATE candidates SET votes = votes + %s WHERE id=%s", (multiplier, candidate_id))
 
         conn.commit()
     finally:
@@ -210,7 +216,8 @@ def vote():
 
     scoreboard_cache["data"] = None
     scoreboard_cache["timestamp"] = 0
-    return jsonify({"message": "Votes recorded successfully."}), 200
+    return jsonify({"message": f"Votes recorded successfully (multiplier={multiplier})."}), 200
+
 
 # --- Results endpoint with caching ---
 @app.route("/results", methods=["GET"])
@@ -262,6 +269,7 @@ def results():
         print("Error in /results:", e)
         return jsonify({"message": "Error loading results"}), 500
 
+
 # --- Update FB reactions endpoint (protected) ---
 @app.route("/update_fb", methods=["POST"])
 def update_fb():
@@ -290,6 +298,7 @@ def update_fb():
 
     return jsonify({"message": f"FB reactions updated for candidate {candidate_id}."}), 200
 
+
 # --- Invalidate vote endpoint (protected) ---
 @app.route("/invalidate_vote", methods=["POST"])
 def invalidate_vote():
@@ -308,18 +317,18 @@ def invalidate_vote():
         cursor.close()
         release_db_connection(conn)
 
-    # Clear cache so results refresh
     scoreboard_cache["data"] = None
     scoreboard_cache["timestamp"] = 0
 
     return jsonify({"message": f"Vote {vote_id} marked invalid."}), 200
+
 
 # --- Admin login/logout ---
 @app.route("/login", methods=["POST"])
 def login():
     data = request.get_json()
     password = data.get("password")
-    if password == "admin123":  # palitan mo ito ng mas secure na password
+    if password == os.environ.get("ADMIN_PASSWORD", "admin123"):
         session["admin_logged_in"] = True
         return jsonify({"message": "Login successful"}), 200
     else:
@@ -330,10 +339,12 @@ def logout():
     session.pop("admin_logged_in", None)
     return jsonify({"message": "Logged out"}), 200
 
+
 # --- Serve frontend folder ---
 @app.route("/<path:filename>")
 def frontend_files(filename):
     return send_from_directory("frontend", filename)
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
