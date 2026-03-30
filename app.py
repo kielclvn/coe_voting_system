@@ -1,8 +1,10 @@
-from flask import Flask, request, jsonify, send_from_directory, session
+from flask import Flask, request, jsonify, send_from_directory, session, Response
 import os
 from datetime import datetime, timedelta
 import pytz
 from psycopg2 import pool
+import csv
+from io import StringIO
 
 app = Flask(__name__)
 app.secret_key = "supersecretkey"  # palitan mo ito ng mas secure na string
@@ -268,6 +270,48 @@ def results():
     except Exception as e:
         print("Error in /results:", e)
         return jsonify({"message": "Error loading results"}), 500
+    
+@app.route("/export_votes", methods=["GET"])
+def export_votes():
+    if not session.get("admin_logged_in"):
+        return jsonify({"message": "Unauthorized"}), 403
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("""
+                SELECT id, ticket_id, student_name, candidate_id, gender, timestamp, is_valid
+                FROM votes
+                ORDER BY timestamp ASC
+            """)
+            votes_rows = cursor.fetchall()
+        finally:
+            cursor.close()
+            release_db_connection(conn)
+
+        # Build CSV in memory
+        output = StringIO()
+        writer = csv.writer(output)
+        writer.writerow(["ID", "Ticket ID", "Student Name", "Candidate ID", "Gender", "Timestamp", "Valid"])
+        for row in votes_rows:
+            writer.writerow([
+                row[0],
+                row[1],
+                row[2],
+                row[3],
+                row[4],
+                row[5].isoformat() if row[5] else "",
+                "Valid" if row[6] else "Invalid"
+            ])
+
+        response = Response(output.getvalue(), mimetype="text/csv")
+        response.headers["Content-Disposition"] = "attachment; filename=votes_export.csv"
+        return response
+
+    except Exception as e:
+        print("Error in /export_votes:", e)
+        return jsonify({"message": "Error exporting votes"}), 500
 
 
 # --- Update FB reactions endpoint (protected) ---
