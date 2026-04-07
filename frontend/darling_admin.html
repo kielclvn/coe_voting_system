@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Darling of the Crowd Admin</title>
+  <title>Darling of the Crowd Results</title>
   <style>
     body {
       font-family: 'Segoe UI', Arial, sans-serif;
@@ -20,19 +20,26 @@
       margin-bottom: 20px;
       text-shadow: 2px 2px 4px #000;
     }
-    form {
-      margin-top: 40px;
-      background: rgba(255,255,255,0.9);
-      padding: 20px;
-      border-radius: 10px;
-      color: #333;
+    h2 {
+      font-size: 1.5em;
+      color: #FFD700;
+      border-bottom: 2px solid #FFD700;
+      display: inline-block;
+      padding-bottom: 5px;
+      text-shadow: 1px 1px 3px #000;
+    }
+    .candidate-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
     }
     table {
       width: 100%;
       background: #fff;
       color: #333;
       border-collapse: collapse;
-      margin-top: 20px;
+      margin-top: 10px;
     }
     table th, table td {
       border: 1px solid #FFD700;
@@ -43,53 +50,56 @@
       background: #FFD700;
       color: #333;
     }
-    input[type="number"] {
-      padding: 5px;
-      width: 80px;
-      border: 1px solid #FFD700;
-      border-radius: 5px;
-    }
-    button {
-      padding: 6px 12px;
-      background: #FFD700;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
+    .darling {
+      background-color: #ffeeba;
       font-weight: bold;
-      color: #333;
+      color: #d32f2f;
     }
-    button:hover { background: #e6c200; }
   </style>
 </head>
 <body>
-  <h1>Darling of the Crowd - Admin Encoding</h1>
+  <h1>Darling of the Crowd Results</h1>
 
-  <form method="POST">
-    <table>
-      <thead>
-        <tr>
-          <th>Candidate</th>
-          <th>Gender</th>
-          <th>FB Reacts</th>
-          <th>Site Votes</th>
-          <th>Save</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for c in candidates %}
-        <tr>
-          <td>{{ c["name"] }}</td>
-          <td>{{ c["gender"] }}</td>
-          <td><input type="number" name="fb_reacts" value="{{ c["fb_reacts"] }}" min="0"></td>
-          <td><input type="number" name="site_votes" value="{{ c["site_votes"] }}" min="0"></td>
-          <td>
-            <input type="hidden" name="candidate_id" value="{{ c["id"] }}">
-            <button type="submit">Update</button>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </form>
+  <div class="candidate-grid">
+    <!-- Mr Results -->
+    <div>
+      <h2>Mr Results</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Placement</th>
+            <th>Candidate</th>
+            <th>Final Score</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="darling"><td>1</td><td>Mr Candidate A</td><td>85.50%</td></tr>
+          <tr><td>2</td><td>Mr Candidate B</td><td>78.20%</td></tr>
+          <tr><td>3</td><td>Mr Candidate C</td><td>70.10%</td></tr>
+          <!-- add more rows as per Excel -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Ms Results -->
+    <div>
+      <h2>Ms Results</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Placement</th>
+            <th>Candidate</th>
+            <th>Final Score</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="darling"><td>1</td><td>Ms Candidate X</td><td>88.40%</td></tr>
+          <tr><td>2</td><td>Ms Candidate Y</td><td>80.75%</td></tr>
+          <tr><td>3</td><td>Ms Candidate Z</td><td>72.30%</td></tr>
+          <!-- add more rows as per Excel -->
+        </tbody>
+      </table>
+    </div>
+  </div>
 </body>
 </html>
