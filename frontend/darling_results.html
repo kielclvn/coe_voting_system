@@ -36,7 +36,8 @@
       margin: 40px 0;
     }
     .podium div {
-      background: rgba(255,255,255,0.95);
+      background: rgba(0,0,0,0.6); /* dark semi-transparent */
+      color: #fff;                 /* white text for readability */
       border: 2px solid #FFD700;
       border-radius: 10px;
       padding: 15px;
@@ -45,15 +46,8 @@
       flex: 1;
     }
     .first {
-      background: #ffeeba;
       font-weight: bold;
       transform: scale(1.2);
-    }
-    .second {
-      background: #e0e0e0;
-    }
-    .third {
-      background: #f5deb3;
     }
     .candidate-photo {
       width: 120px;
@@ -66,6 +60,10 @@
     .first .candidate-photo {
       width: 150px;
       height: 150px;
+    }
+    .podium h3 {
+      color: #FFD700;
+      margin-bottom: 10px;
     }
     .others {
       list-style: none;
@@ -89,21 +87,21 @@
   <h2>Mr. COE Results</h2>
   <div class="podium">
     <div class="second">
-      <h3>2nd</h3>
+      <h3>🥈 2nd</h3>
       <img src="images/mr6.jpg" alt="John Edward Sabado" class="candidate-photo">
       <p>SABADO, JOHN EDWARD</p>
       <p>Ugnayang Kayumanggi</p>
       <p>25.45%</p>
     </div>
     <div class="first">
-      <h3>1st</h3>
+      <h3>🥇 1st</h3>
       <img src="images/mr8.jpg" alt="Alex Ventilacion" class="candidate-photo">
       <p>VENTILACION, ALEX</p>
       <p>The Elite Guild</p>
       <p>34.17%</p>
     </div>
     <div class="third">
-      <h3>3rd</h3>
+      <h3>🥉 3rd</h3>
       <img src="images/mr7.jpg" alt="Diego Salvador Sandico" class="candidate-photo">
       <p>SANDICO, DIEGO SALVADOR</p>
       <p>HM Society</p>
@@ -123,21 +121,21 @@
   <h2>Ms. COE Results</h2>
   <div class="podium">
     <div class="second">
-      <h3>2nd</h3>
+      <h3>🥈 2nd</h3>
       <img src="images/ms5.jpg" alt="Nadine Marinay" class="candidate-photo">
       <p>MARINAY, NADINE</p>
       <p>The Elite Guild</p>
       <p>21.58%</p>
     </div>
     <div class="first">
-      <h3>1st</h3>
+      <h3>🥇 1st</h3>
       <img src="images/ms6.jpg" alt="Ashley Kate Lobarbio" class="candidate-photo">
       <p>LOBARBIO, ASHLEY KATE</p>
       <p>Ugnayang Kayumanggi</p>
       <p>27.05%</p>
     </div>
     <div class="third">
-      <h3>3rd</h3>
+      <h3>🥉 3rd</h3>
       <img src="images/ms3.jpg" alt="Ryzamae Ballesteros" class="candidate-photo">
       <p>BALLESTEROS, RYZAMAE</p>
       <p>Daskalos Coalition</p>
