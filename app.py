@@ -271,6 +271,33 @@ def results():
         print("Error in /results:", e)
         return jsonify({"message": "Error loading results"}), 500
     
+@app.route("/darling_admin", methods=["GET","POST"])
+def darling_admin():
+    conn = get_db()
+    if request.method == "POST":
+        candidate_id = request.form["candidate_id"]
+        fb = int(request.form["fb_reacts"])
+        site = int(request.form["site_votes"])
+        conn.execute("UPDATE candidates SET fb_reacts=?, site_votes=? WHERE id=?",
+                     (fb, site, candidate_id))
+        conn.commit()
+    candidates = conn.execute("SELECT * FROM candidates").fetchall()
+    conn.close()
+    return render_template("darling_admin.html", candidates=candidates)
+
+@app.route("/darling_results")
+def darling_results():
+    conn = get_db()
+    results = conn.execute("""
+        SELECT id, name,
+        (CAST(fb_reacts AS FLOAT)/(SELECT SUM(fb_reacts) FROM candidates))*0.5 +
+        (CAST(site_votes AS FLOAT)/(SELECT SUM(site_votes) FROM candidates))*0.5 AS final_score
+        FROM candidates
+        ORDER BY final_score DESC
+    """).fetchall()
+    conn.close()
+    return render_template("darling_results.html", results=results)
+
 @app.route("/export_votes", methods=["GET"])
 def export_votes():
     if not session.get("admin_logged_in"):

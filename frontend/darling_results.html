@@ -1,0 +1,49 @@
+<h2>Darling of the Crowd Results</h2>
+
+<div class="row">
+  <!-- Mr Results -->
+  <div class="col-md-6">
+    <h3>Mr Results</h3>
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Placement</th>
+          <th>Candidate</th>
+          <th>Final Score</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in results if row["gender"] == "male" %}
+        <tr {% if loop.index == 1 %} class="table-success" {% endif %}>
+          <td>{{ loop.index }}</td>
+          <td>{{ row["name"] }}</td>
+          <td>{{ "%.2f"|format(row["final_score"]*100) }}%</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Ms Results -->
+  <div class="col-md-6">
+    <h3>Ms Results</h3>
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Placement</th>
+          <th>Candidate</th>
+          <th>Final Score</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in results if row["gender"] == "female" %}
+        <tr {% if loop.index == 1 %} class="table-success" {% endif %}>
+          <td>{{ loop.index }}</td>
+          <td>{{ row["name"] }}</td>
+          <td>{{ "%.2f"|format(row["final_score"]*100) }}%</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>

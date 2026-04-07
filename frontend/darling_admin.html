@@ -1,0 +1,26 @@
+<h2>Encode Darling of the Crowd Votes</h2>
+<form method="POST">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Candidate</th>
+        <th>FB Reacts</th>
+        <th>Site Votes</th>
+        <th>Save</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in candidates %}
+      <tr>
+        <td>{{ c["name"] }}</td>
+        <td><input type="number" name="fb_reacts" value="{{ c["fb_reacts"] }}"></td>
+        <td><input type="number" name="site_votes" value="{{ c["site_votes"] }}"></td>
+        <td>
+          <input type="hidden" name="candidate_id" value="{{ c["id"] }}">
+          <button type="submit">Update</button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</form>
